@@ -55,30 +55,35 @@ function updateTokenStatus(configured) {
 
 // Scoring function
 function calculateScore(jobText, resumeKeywords) {
-  const jobWords = jobText.toLowerCase().split(/\s+/);
-  const resumeWords = resumeKeywords.toLowerCase().split(',');
-  
-  let matches = 0;
-  let totalKeywords = resumeWords.length;
-  
-  for (let keyword of resumeWords) {
-    keyword = keyword.trim();
-    if (jobWords.some(word => word.includes(keyword) || keyword.includes(word))) {
-      matches++;
+  try {
+    const jobWords = jobText.toLowerCase().split(/\s+/);
+    const resumeWords = resumeKeywords.toLowerCase().split(',');
+    
+    let matches = 0;
+    let totalKeywords = resumeWords.length;
+    
+    for (let keyword of resumeWords) {
+      keyword = keyword.trim();
+      if (jobWords.some(word => word.includes(keyword) || keyword.includes(word))) {
+        matches++;
+      }
     }
+    
+    const percentage = Math.round((matches / totalKeywords) * 100);
+    
+    // Convert to letter grade
+    let grade;
+    if (percentage >= 80) grade = 'A';
+    else if (percentage >= 60) grade = 'B';
+    else if (percentage >= 40) grade = 'C';
+    else if (percentage >= 20) grade = 'D';
+    else grade = 'E';
+    
+    return { percentage, grade, matches, totalKeywords };
+  } catch (error) {
+    console.error('Error calculating score:', error);
+    return { percentage: 0, grade: 'E', matches: 0, totalKeywords: 0 };
   }
-  
-  const percentage = Math.round((matches / totalKeywords) * 100);
-  
-  // Convert to letter grade
-  let grade;
-  if (percentage >= 80) grade = 'A';
-  else if (percentage >= 60) grade = 'B';
-  else if (percentage >= 40) grade = 'C';
-  else if (percentage >= 20) grade = 'D';
-  else grade = 'E';
-  
-  return { percentage, grade, matches, totalKeywords };
 }
 
 // Get missing keywords
@@ -532,7 +537,8 @@ function displayResults(jobInfo, scores) {
       scores.forEach(score => {
         try {
           const scoreElement = document.createElement('div');
-          scoreElement.className = `resume-score score-${score.grade.toLowerCase()}`;
+          const grade = score.grade || 'e'; // Default to 'e' if grade is undefined
+          scoreElement.className = `resume-score score-${grade.toLowerCase()}`;
           
           const missingKeywords = getMissingKeywords(jobInfo.description || '', RESUMES[score.id].keywords);
           

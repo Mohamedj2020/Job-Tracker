@@ -18,7 +18,8 @@
     "https://*.glassdoor.com/*",
     "https://*.ziprecruiter.com/*",
     "https://*.monster.com/*",
-    "https://*.careers.rtx.com/*"
+    "https://*.careers.rtx.com/*",
+    "https://api.notion.com/*"
   ],
   "action": {
     "default_popup": "popup.html",
