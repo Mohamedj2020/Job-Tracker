@@ -1,5 +1,5 @@
 // Tab switching functionality
-function showTab(tabName) {
+function showTab(tabName, clickedElement) {
   // Hide all tab contents
   const tabContents = document.querySelectorAll('.tab-content');
   tabContents.forEach(content => content.classList.remove('active'));
@@ -12,7 +12,9 @@ function showTab(tabName) {
   document.getElementById(tabName + '-tab').classList.add('active');
   
   // Add active class to clicked tab
-  event.target.classList.add('active');
+  if (clickedElement) {
+    clickedElement.classList.add('active');
+  }
 }
 
 // Make showTab function globally available

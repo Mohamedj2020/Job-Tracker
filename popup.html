@@ -56,8 +56,8 @@
   </head>
   <body>
     <div class="tab-container">
-      <button class="tab active" onclick="showTab('job')">Save Job</button>
-      <button class="tab" onclick="showTab('resume')">Resume</button>
+      <button class="tab active" onclick="showTab('job', this)">Save Job</button>
+      <button class="tab" onclick="showTab('resume', this)">Resume</button>
     </div>
 
     <!-- Job Tab -->
@@ -67,6 +67,10 @@
       <input type="text" id="company" placeholder="Company">
       <input type="text" id="link" placeholder="Link" value="">
       <input type="text" id="status" placeholder="Status" value="Applied">
+      <input type="text" id="notes" placeholder="Notes">
+      <input type="file" id="coverLetterFile" accept=".pdf,.doc,.docx,.txt">
+      <small>Optional: Upload a cover letter (PDF, DOC, DOCX, TXT)</small>
+      <br>
       <button id="saveJob">Save to Notion</button>
     </div>
 
