@@ -225,6 +225,33 @@ async function scrapeJobInfo() {
   }
 }
 
+// Get database structure to verify column names
+async function getDatabaseStructure() {
+  if (!NOTION_CONFIG.token) {
+    return null;
+  }
+  
+  try {
+    const response = await fetch(`https://api.notion.com/v1/databases/${NOTION_CONFIG.databaseId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${NOTION_CONFIG.token}`,
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28'
+      }
+    });
+    
+    if (response.ok) {
+      const database = await response.json();
+      console.log('Database structure:', database.properties);
+      return database.properties;
+    }
+  } catch (error) {
+    console.error('Error getting database structure:', error);
+  }
+  return null;
+}
+
 // Save to Notion
 async function saveToNotion(jobInfo, bestResume) {
   if (!NOTION_CONFIG.token) {
@@ -243,39 +270,46 @@ async function saveToNotion(jobInfo, bestResume) {
       body: JSON.stringify({
         parent: { database_id: NOTION_CONFIG.databaseId },
         properties: {
-          'Title': {
-            title: [{ text: { content: jobInfo.title } }]
-          },
           'Company': {
-            rich_text: [{ text: { content: jobInfo.company } }]
+            title: [{ text: { content: jobInfo.company } }]
+          },
+          'Job Link': {
+            url: jobInfo.url
           },
           'Status': {
             select: { name: 'Applied' }
           },
-          'Link': {
-            url: jobInfo.url
+          'Contact Name': {
+            rich_text: [{ text: { content: 'Auto-filled by Job Matcher' } }]
           },
-          'Resume Used': {
-            rich_text: [{ text: { content: bestResume.name } }]
+          'Contact Email': {
+            rich_text: [{ text: { content: 'Auto-filled by Job Matcher' } }]
           },
-          'Match Score': {
-            number: bestResume.score.percentage
-          },
-          'Application Date': {
+          'Last Communication': {
             date: { start: new Date().toISOString() }
+          },
+          'Salary': {
+            rich_text: [{ text: { content: 'Not specified' } }]
+          },
+          'Rating': {
+            number: bestResume.score.percentage
           }
         }
       })
     });
     
     if (response.ok) {
-      alert('Job saved to Notion successfully!');
+      const result = await response.json();
+      console.log('Successfully saved to Notion:', result);
+      alert('✅ Job saved to Notion successfully!\n\nCheck your Application Tracker database for the new entry.');
     } else {
-      throw new Error('Failed to save to Notion');
+      const errorData = await response.text();
+      console.error('Notion API error:', errorData);
+      throw new Error(`Failed to save to Notion: ${response.status} ${response.statusText}`);
     }
   } catch (error) {
     console.error('Error saving to Notion:', error);
-    alert('Error saving to Notion. Please check your configuration.');
+    alert(`Error saving to Notion: ${error.message}\n\nPlease check your token and database permissions.`);
   }
 }
 
