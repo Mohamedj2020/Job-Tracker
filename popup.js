@@ -506,43 +506,63 @@ Mohamed Jira`
 
 // Display results
 function displayResults(jobInfo, scores) {
-  document.getElementById('loading').style.display = 'none';
-  document.getElementById('content').style.display = 'block';
-  
-  // Update job info
-  document.getElementById('jobTitle').textContent = jobInfo.title || 'Job Title Not Found';
-  document.getElementById('company').textContent = jobInfo.company || 'Company Not Found';
-  document.getElementById('location').textContent = jobInfo.location || 'Location Not Found';
-  
-  // Display resume scores
-  const scoresContainer = document.getElementById('resumeScores');
-  scoresContainer.innerHTML = '';
-  
-  if (scores && scores.length > 0) {
-    scores.forEach(score => {
-      const scoreElement = document.createElement('div');
-      scoreElement.className = `resume-score score-${score.grade.toLowerCase()}`;
-      
-      const missingKeywords = getMissingKeywords(jobInfo.description || '', RESUMES[score.id].keywords);
-      
-      scoreElement.innerHTML = `
-        <div>
-          <div class="resume-name">${score.name}</div>
-          <div class="missing-keywords">
-            Missing: ${missingKeywords.join(', ')}
-          </div>
-        </div>
-        <div class="score-details">
-          <div class="score-percent">${score.score.percentage}%</div>
-          <div class="score-grade">${score.score.grade}</div>
-        </div>
-      `;
-      
-      scoresContainer.appendChild(scoreElement);
-    });
-  } else {
-    // Show default message if no scores
-    scoresContainer.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No resume matches available</div>';
+  try {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    
+    // Update job info
+    const jobTitleElement = document.getElementById('jobTitle');
+    const companyElement = document.getElementById('company');
+    const locationElement = document.getElementById('location');
+    
+    if (jobTitleElement) jobTitleElement.textContent = jobInfo.title || 'Job Title Not Found';
+    if (companyElement) companyElement.textContent = jobInfo.company || 'Company Not Found';
+    if (locationElement) locationElement.textContent = jobInfo.location || 'Location Not Found';
+    
+    // Display resume scores
+    const scoresContainer = document.getElementById('resumeScores');
+    if (!scoresContainer) {
+      console.error('resumeScores element not found');
+      return;
+    }
+    
+    scoresContainer.innerHTML = '';
+    
+    if (scores && scores.length > 0) {
+      scores.forEach(score => {
+        try {
+          const scoreElement = document.createElement('div');
+          scoreElement.className = `resume-score score-${score.grade.toLowerCase()}`;
+          
+          const missingKeywords = getMissingKeywords(jobInfo.description || '', RESUMES[score.id].keywords);
+          
+          scoreElement.innerHTML = `
+            <div>
+              <div class="resume-name">${score.name}</div>
+              <div class="missing-keywords">
+                Missing: ${missingKeywords.join(', ')}
+              </div>
+            </div>
+            <div class="score-details">
+              <div class="score-percent">${score.score.percentage}%</div>
+              <div class="score-grade">${score.score.grade}</div>
+            </div>
+          `;
+          
+          scoresContainer.appendChild(scoreElement);
+        } catch (scoreError) {
+          console.error('Error creating score element:', scoreError);
+        }
+      });
+    } else {
+      // Show default message if no scores
+      scoresContainer.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No resume matches available</div>';
+    }
+  } catch (error) {
+    console.error('Error in displayResults:', error);
+    // Fallback: show basic content
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
   }
 }
 
