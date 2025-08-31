@@ -6,22 +6,87 @@
       body {
         font-family: Arial, sans-serif;
         padding: 10px;
-        width: 250px;
+        width: 300px;
       }
-      input, button {
+      .tab-container {
+        display: flex;
+        margin-bottom: 15px;
+        border-bottom: 1px solid #ccc;
+      }
+      .tab {
+        flex: 1;
+        padding: 8px;
+        text-align: center;
+        cursor: pointer;
+        background: #f0f0f0;
+        border: none;
+        border-radius: 4px 4px 0 0;
+      }
+      .tab.active {
+        background: #007bff;
+        color: white;
+      }
+      .tab-content {
+        display: none;
+      }
+      .tab-content.active {
+        display: block;
+      }
+      input, textarea, button {
         margin-top: 5px;
         width: 100%;
         padding: 8px;
+        box-sizing: border-box;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 60px;
+      }
+      .file-input {
+        margin-top: 10px;
+      }
+      .resume-preview {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 4px;
+        font-size: 12px;
       }
     </style>
   </head>
   <body>
-    <h3>Save Job</h3>
-    <input type="text" id="jobTitle" placeholder="Job Title">
-    <input type="text" id="company" placeholder="Company">
-    <input type="text" id="link" placeholder="Link" value="">
-    <input type="text" id="status" placeholder="Status" value="Applied">
-    <button id="saveJob">Save to Notion</button>
+    <div class="tab-container">
+      <button class="tab active" onclick="showTab('job')">Save Job</button>
+      <button class="tab" onclick="showTab('resume')">Resume</button>
+    </div>
+
+    <!-- Job Tab -->
+    <div id="job-tab" class="tab-content active">
+      <h3>Save Job</h3>
+      <input type="text" id="jobTitle" placeholder="Job Title">
+      <input type="text" id="company" placeholder="Company">
+      <input type="text" id="link" placeholder="Link" value="">
+      <input type="text" id="status" placeholder="Status" value="Applied">
+      <button id="saveJob">Save to Notion</button>
+    </div>
+
+    <!-- Resume Tab -->
+    <div id="resume-tab" class="tab-content">
+      <h3>Resume Manager</h3>
+      <input type="text" id="resumeName" placeholder="Resume Name (e.g., 'Software Engineer Resume')">
+      <textarea id="resumeContent" placeholder="Paste your resume content here..."></textarea>
+      <div class="file-input">
+        <input type="file" id="resumeFile" accept=".pdf,.doc,.docx,.txt">
+        <small>Or upload a file (PDF, DOC, DOCX, TXT)</small>
+      </div>
+      <button id="saveResume">Save Resume</button>
+      <button id="loadResume">Load Saved Resume</button>
+      <div id="resumePreview" class="resume-preview" style="display: none;">
+        <strong>Preview:</strong>
+        <div id="previewContent"></div>
+      </div>
+    </div>
+
     <script src="popup.js"></script>
   </body>
 </html>
