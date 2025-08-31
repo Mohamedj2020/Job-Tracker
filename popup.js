@@ -21,7 +21,7 @@ const RESUMES = {
 // Notion configuration - Load from Chrome storage
 let NOTION_CONFIG = {
   token: '',
-  databaseId: '1aa904c944e681eb80d2fd4dc7bc098a' // From your Application Tracker database
+  databaseId: '1aa904c9-44e6-81eb-80d2-fd4dc7bc098a' // From your Application Tracker database (formatted with hyphens)
 };
 
 // Load Notion token from Chrome storage
@@ -338,7 +338,18 @@ async function saveToNotion(jobInfo, bestResume) {
     } else {
       const errorData = await response.text();
       console.error('Notion API error:', errorData);
-      throw new Error(`Failed to save to Notion: ${response.status} ${response.statusText}`);
+      
+      let errorMessage = `Failed to save to Notion: ${response.status} ${response.statusText}`;
+      
+      if (response.status === 404) {
+        errorMessage = 'Database not found. Please check your database ID and make sure your integration has access to the database.';
+      } else if (response.status === 401) {
+        errorMessage = 'Invalid token. Please check your Notion integration token.';
+      } else if (response.status === 403) {
+        errorMessage = 'Access denied. Please make sure your integration has permission to access the database.';
+      }
+      
+      throw new Error(errorMessage);
     }
   } catch (error) {
     console.error('Error saving to Notion:', error);
