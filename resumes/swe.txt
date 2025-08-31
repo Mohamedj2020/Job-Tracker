@@ -1,0 +1,18 @@
+SOFTWARE ENGINEER RESUME
+
+EXPERIENCE
+Senior Software Engineer | Tech Company | 2020-2023
+- Developed scalable web applications using React, Node.js, and Python
+- Led technical architecture decisions and code reviews for team of 8 engineers
+- Implemented microservices architecture improving system performance by 60%
+- Collaborated with product managers to define technical requirements
+- Mentored junior developers and conducted technical interviews
+
+Software Engineer | Startup | 2018-2020
+- Built full-stack applications using JavaScript, Python, and AWS
+- Designed and implemented RESTful APIs and database schemas
+- Worked in agile environment with daily standups and sprint planning
+- Participated in code reviews and maintained code quality standards
+
+SKILLS
+JavaScript, Python, React, Node.js, AWS, RESTful APIs, Microservices, Database Design, Git, Docker, Kubernetes, Agile/Scrum, Code Review, System Architecture, Performance Optimization, Testing, CI/CD, DevOps, Cloud Computing, API Design, Data Structures, Algorithms, Object-Oriented Programming, Functional Programming, Web Development, Mobile Development, Machine Learning, Data Analysis, Debugging, Problem Solving, Technical Leadership, Mentoring

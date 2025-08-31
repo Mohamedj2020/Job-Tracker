@@ -1,97 +1,169 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Job Tracker</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        padding: 10px;
-        width: 300px;
-      }
-      .tab-container {
-        display: flex;
-        margin-bottom: 15px;
-        border-bottom: 1px solid #ccc;
-      }
-      .tab {
-        flex: 1;
-        padding: 8px;
-        text-align: center;
-        cursor: pointer;
-        background: #f0f0f0;
-        border: none;
-        border-radius: 4px 4px 0 0;
-      }
-      .tab.active {
-        background: #007bff;
-        color: white;
-      }
-      .tab-content {
-        display: none;
-      }
-      .tab-content.active {
-        display: block;
-      }
-      input, textarea, button {
-        margin-top: 5px;
-        width: 100%;
-        padding: 8px;
-        box-sizing: border-box;
-      }
-      textarea {
-        resize: vertical;
-        min-height: 60px;
-      }
-      .file-input {
-        margin-top: 10px;
-      }
-      .resume-preview {
-        margin-top: 10px;
-        padding: 10px;
-        background: #f8f9fa;
-        border-radius: 4px;
-        font-size: 12px;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="tab-container">
-      <button class="tab active" onclick="showTab('job', this)">Save Job</button>
-      <button class="tab" onclick="showTab('resume', this)">Resume</button>
+<head>
+  <title>Job Matcher</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 15px;
+      width: 400px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .job-info {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .job-info h3 {
+      margin: 0 0 10px 0;
+      color: #333;
+    }
+    
+    .job-info p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+    
+    .resume-scores {
+      margin-bottom: 20px;
+    }
+    
+    .resume-score {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 6px;
+      border-left: 4px solid;
+    }
+    
+    .score-a { background: #d4edda; border-left-color: #28a745; }
+    .score-b { background: #d1ecf1; border-left-color: #17a2b8; }
+    .score-c { background: #fff3cd; border-left-color: #ffc107; }
+    .score-d { background: #f8d7da; border-left-color: #dc3545; }
+    .score-e { background: #f5c6cb; border-left-color: #721c24; }
+    
+    .resume-name {
+      font-weight: bold;
+      font-size: 14px;
+    }
+    
+    .score-details {
+      text-align: right;
+      font-size: 12px;
+    }
+    
+    .score-percent {
+      font-size: 16px;
+      font-weight: bold;
+    }
+    
+    .score-grade {
+      font-size: 18px;
+      font-weight: bold;
+    }
+    
+    .missing-keywords {
+      font-size: 11px;
+      color: #666;
+      margin-top: 5px;
+    }
+    
+    .actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    
+    .primary-btn {
+      background: #007bff;
+      color: white;
+    }
+    
+    .secondary-btn {
+      background: #6c757d;
+      color: white;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+    
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+    
+    .notion-config {
+      background: #e9ecef;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>Job Matcher</h2>
+  </div>
+  
+  <div id="loading" class="loading">
+    Analyzing job posting...
+  </div>
+  
+  <div id="error" class="error" style="display: none;">
+    Could not analyze this page. Make sure you're on a job posting page.
+  </div>
+  
+  <div id="content" style="display: none;">
+    <div class="job-info">
+      <h3 id="jobTitle">Job Title</h3>
+      <p><strong>Company:</strong> <span id="company">Company Name</span></p>
+      <p><strong>Location:</strong> <span id="location">Location</span></p>
     </div>
-
-    <!-- Job Tab -->
-    <div id="job-tab" class="tab-content active">
-      <h3>Save Job</h3>
-      <input type="text" id="jobTitle" placeholder="Job Title">
-      <input type="text" id="company" placeholder="Company">
-      <input type="text" id="link" placeholder="Link" value="">
-      <input type="text" id="status" placeholder="Status" value="Applied">
-      <input type="text" id="notes" placeholder="Notes">
-      <input type="file" id="coverLetterFile" accept=".pdf,.doc,.docx,.txt">
-      <small>Optional: Upload a cover letter (PDF, DOC, DOCX, TXT)</small>
-      <br>
-      <button id="saveJob">Save to Notion</button>
+    
+    <div class="resume-scores">
+      <h3>Resume Matches</h3>
+      <div id="resumeScores"></div>
     </div>
-
-    <!-- Resume Tab -->
-    <div id="resume-tab" class="tab-content">
-      <h3>Resume Manager</h3>
-      <input type="text" id="resumeName" placeholder="Resume Name (e.g., 'Software Engineer Resume')">
-      <textarea id="resumeContent" placeholder="Paste your resume content here..."></textarea>
-      <div class="file-input">
-        <input type="file" id="resumeFile" accept=".pdf,.doc,.docx,.txt">
-        <small>Or upload a file (PDF, DOC, DOCX, TXT)</small>
-      </div>
-      <button id="saveResume">Save Resume</button>
-      <button id="loadResume">Load Saved Resume</button>
-      <div id="resumePreview" class="resume-preview" style="display: none;">
-        <strong>Preview:</strong>
-        <div id="previewContent"></div>
-      </div>
+    
+    <div class="notion-config">
+      <strong>Notion Integration:</strong><br>
+      Add your Notion token and database ID in the extension settings
     </div>
-
-    <script src="popup.js"></script>
-  </body>
+    
+    <div class="actions">
+      <button id="saveToNotion" class="primary-btn">Save to Notion</button>
+      <button id="refreshScores" class="secondary-btn">Refresh</button>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
 </html>
 

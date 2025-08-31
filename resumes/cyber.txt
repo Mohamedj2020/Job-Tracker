@@ -1,0 +1,18 @@
+CYBERSECURITY ANALYST RESUME
+
+EXPERIENCE
+Senior Cybersecurity Analyst | Security Company | 2020-2023
+- Conducted security assessments and penetration testing for enterprise clients
+- Managed SIEM systems and responded to security incidents in real-time
+- Implemented security controls and compliance frameworks (SOC 2, ISO 27001)
+- Led security awareness training and developed security policies
+- Performed vulnerability assessments and risk analysis
+
+Cybersecurity Analyst | Financial Institution | 2018-2020
+- Monitored network traffic for suspicious activities and threats
+- Investigated security breaches and documented incident response procedures
+- Assisted in implementing security tools and monitoring systems
+- Participated in security audits and compliance assessments
+
+SKILLS
+Penetration Testing, SIEM, Incident Response, Vulnerability Assessment, Risk Analysis, Security Controls, Compliance, SOC 2, ISO 27001, Network Security, Threat Intelligence, Security Policies, Security Awareness, Malware Analysis, Digital Forensics, Security Tools, Firewall Configuration, Intrusion Detection, Security Auditing, Threat Hunting, Security Architecture, Cryptography, Access Control, Identity Management, Security Monitoring, Incident Management, Security Frameworks, Risk Management, Security Assessment, Compliance Frameworks, Security Training
