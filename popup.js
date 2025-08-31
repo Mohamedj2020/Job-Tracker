@@ -21,16 +21,23 @@ const RESUMES = {
 // Notion configuration - Load from Chrome storage
 let NOTION_CONFIG = {
   token: '',
-  databaseId: '1aa904c9-44e6-81eb-80d2-fd4dc7bc098a' // From your Application Tracker database (formatted with hyphens)
+  databaseId: '' // Will be loaded from storage or set manually
 };
 
-// Load Notion token from Chrome storage
-chrome.storage.local.get(['notionToken'], (result) => {
+// Load Notion token and database ID from Chrome storage
+chrome.storage.local.get(['notionToken', 'notionDatabaseId'], (result) => {
   if (result.notionToken) {
     NOTION_CONFIG.token = result.notionToken;
     updateTokenStatus(true);
   } else {
     updateTokenStatus(false);
+  }
+  
+  if (result.notionDatabaseId) {
+    NOTION_CONFIG.databaseId = result.notionDatabaseId;
+    updateDatabaseStatus(true);
+  } else {
+    updateDatabaseStatus(false);
   }
 });
 
@@ -50,6 +57,22 @@ function updateTokenStatus(configured) {
     statusElement.style.color = '#dc3545';
     buttonElement.textContent = 'Configure Token';
     clearButton.style.display = 'none';
+  }
+}
+
+// Update database status display
+function updateDatabaseStatus(configured) {
+  const statusElement = document.getElementById('databaseStatus');
+  const buttonElement = document.getElementById('configureDatabase');
+  
+  if (configured) {
+    statusElement.innerHTML = '✅ Database ID configured';
+    statusElement.style.color = '#28a745';
+    buttonElement.textContent = 'Change Database ID';
+  } else {
+    statusElement.innerHTML = '❌ Database ID not configured';
+    statusElement.style.color = '#dc3545';
+    buttonElement.textContent = 'Configure Database ID';
   }
 }
 
@@ -289,6 +312,11 @@ async function getDatabaseStructure() {
 async function saveToNotion(jobInfo, bestResume) {
   if (!NOTION_CONFIG.token) {
     alert('Please configure your Notion integration token first! Click "Configure Token" to set it up.');
+    return;
+  }
+  
+  if (!NOTION_CONFIG.databaseId) {
+    alert('Please configure your Notion database ID first! Click "Configure Database ID" to set it up.');
     return;
   }
   
@@ -673,6 +701,17 @@ document.addEventListener('DOMContentLoaded', () => {
         NOTION_CONFIG.token = '';
         updateTokenStatus(false);
         alert('Token cleared successfully!');
+      });
+    }
+  });
+
+  document.getElementById('configureDatabase').addEventListener('click', () => {
+    const databaseId = prompt('Enter your Notion Database ID:\n\nTo find this:\n1. Open your Application Tracker database\n2. Copy the ID from the URL\n3. Format it with hyphens (e.g., 1aa904c9-44e6-81eb-80d2-fd4dc7bc098a)');
+    if (databaseId && databaseId.trim()) {
+      chrome.storage.local.set({ notionDatabaseId: databaseId.trim() }, () => {
+        NOTION_CONFIG.databaseId = databaseId.trim();
+        updateDatabaseStatus(true);
+        alert('Database ID saved successfully!');
       });
     }
   });
