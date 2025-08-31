@@ -186,6 +186,9 @@ async function scrapeJobInfo() {
         // If we don't have company, try to extract from URL or page
         if (!company || company === 'Company Not Found') {
           const hostname = window.location.hostname;
+          const url = window.location.href;
+          
+          // Try to extract company from various sources
           if (hostname.includes('linkedin.com')) {
             company = 'LinkedIn';
           } else if (hostname.includes('indeed.com')) {
@@ -196,8 +199,33 @@ async function scrapeJobInfo() {
             company = 'Greenhouse';
           } else if (hostname.includes('lever.co')) {
             company = 'Lever';
-          } else if (hostname.includes('rtx.com')) {
+          } else if (hostname.includes('rtx.com') || url.includes('rtx.com')) {
             company = 'RTX';
+          } else if (hostname.includes('careers.rtx.com')) {
+            company = 'RTX';
+          } else {
+            // Try to extract from page content
+            const companyElements = document.querySelectorAll('[class*="company"], [class*="employer"], [class*="organization"]');
+            for (let element of companyElements) {
+              const text = element.textContent.trim();
+              if (text && text.length > 2 && text.length < 50) {
+                company = text;
+                break;
+              }
+            }
+          }
+        }
+        
+        // If we don't have location, try to extract from page
+        if (!location || location === 'Location Not Found' || location === 'Locations') {
+          const locationElements = document.querySelectorAll('[class*="location"], [class*="place"], [class*="city"]');
+          for (let element of locationElements) {
+            const text = element.textContent.trim();
+            if (text && text.length > 3 && text.length < 100 && 
+                (text.includes(',') || text.includes('United States') || text.includes('Remote'))) {
+              location = text;
+              break;
+            }
           }
         }
         
@@ -482,35 +510,40 @@ function displayResults(jobInfo, scores) {
   document.getElementById('content').style.display = 'block';
   
   // Update job info
-  document.getElementById('jobTitle').textContent = jobInfo.title;
-  document.getElementById('company').textContent = jobInfo.company;
-  document.getElementById('location').textContent = jobInfo.location;
+  document.getElementById('jobTitle').textContent = jobInfo.title || 'Job Title Not Found';
+  document.getElementById('company').textContent = jobInfo.company || 'Company Not Found';
+  document.getElementById('location').textContent = jobInfo.location || 'Location Not Found';
   
   // Display resume scores
   const scoresContainer = document.getElementById('resumeScores');
   scoresContainer.innerHTML = '';
   
-  scores.forEach(score => {
-    const scoreElement = document.createElement('div');
-    scoreElement.className = `resume-score score-${score.grade.toLowerCase()}`;
-    
-    const missingKeywords = getMissingKeywords(jobInfo.description, RESUMES[score.id].keywords);
-    
-    scoreElement.innerHTML = `
-      <div>
-        <div class="resume-name">${score.name}</div>
-        <div class="missing-keywords">
-          Missing: ${missingKeywords.join(', ')}
+  if (scores && scores.length > 0) {
+    scores.forEach(score => {
+      const scoreElement = document.createElement('div');
+      scoreElement.className = `resume-score score-${score.grade.toLowerCase()}`;
+      
+      const missingKeywords = getMissingKeywords(jobInfo.description || '', RESUMES[score.id].keywords);
+      
+      scoreElement.innerHTML = `
+        <div>
+          <div class="resume-name">${score.name}</div>
+          <div class="missing-keywords">
+            Missing: ${missingKeywords.join(', ')}
+          </div>
         </div>
-      </div>
-      <div class="score-details">
-        <div class="score-percent">${score.score.percentage}%</div>
-        <div class="score-grade">${score.score.grade}</div>
-      </div>
-    `;
-    
-    scoresContainer.appendChild(scoreElement);
-  });
+        <div class="score-details">
+          <div class="score-percent">${score.score.percentage}%</div>
+          <div class="score-grade">${score.score.grade}</div>
+        </div>
+      `;
+      
+      scoresContainer.appendChild(scoreElement);
+    });
+  } else {
+    // Show default message if no scores
+    scoresContainer.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No resume matches available</div>';
+  }
 }
 
 // Main function
@@ -556,8 +589,14 @@ document.addEventListener('DOMContentLoaded', () => {
   analyzeJob();
   
   document.getElementById('saveToNotion').addEventListener('click', () => {
-    if (window.currentJobInfo && window.currentScores.length > 0) {
+    if (window.currentJobInfo && window.currentScores && window.currentScores.length > 0) {
       saveToNotion(window.currentJobInfo, window.currentScores[0]);
+    } else if (window.currentJobInfo) {
+      // If we have job info but no scores, create a default score
+      const defaultResume = { name: 'Software Engineer', score: { percentage: 0 } };
+      saveToNotion(window.currentJobInfo, defaultResume);
+    } else {
+      alert('No job information available. Please try refreshing or use manual input.');
     }
   });
   
@@ -569,10 +608,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('autofillForm').addEventListener('click', () => {
-    if (window.currentJobInfo && window.currentScores.length > 0) {
+    if (window.currentJobInfo && window.currentScores && window.currentScores.length > 0) {
       autofillApplicationForm(window.currentJobInfo, window.currentScores[0]);
+    } else if (window.currentJobInfo) {
+      // If we have job info but no scores, use default resume
+      const defaultResume = { name: 'Software Engineer', score: { percentage: 0 } };
+      autofillApplicationForm(window.currentJobInfo, defaultResume);
     } else {
-      alert('Please wait for job analysis to complete first.');
+      alert('No job information available. Please try refreshing or use manual input.');
     }
   });
 
