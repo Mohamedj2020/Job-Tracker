@@ -105,7 +105,7 @@ async function scrapeJobInfo() {
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       function: () => {
-        // Common selectors for job sites
+        // Enhanced selectors for job sites
         const selectors = {
           title: [
             'h1[class*="title"]',
@@ -113,44 +113,93 @@ async function scrapeJobInfo() {
             '.job-title',
             '.position-title',
             '[data-testid="job-title"]',
-            'h1'
+            '[data-automation="job-title"]',
+            'h1',
+            '.title',
+            '[class*="job-title"]',
+            '[class*="position-title"]'
           ],
           company: [
             '[class*="company"]',
             '[class*="employer"]',
             '.company-name',
-            '[data-testid="company"]'
+            '[data-testid="company"]',
+            '[data-automation="company"]',
+            '.employer',
+            '[class*="employer-name"]',
+            '[class*="company-name"]'
           ],
           location: [
             '[class*="location"]',
             '.job-location',
-            '[data-testid="location"]'
+            '[data-testid="location"]',
+            '[data-automation="location"]',
+            '.location',
+            '[class*="job-location"]',
+            '[class*="position-location"]'
           ],
           description: [
             '[class*="description"]',
             '.job-description',
             '[data-testid="description"]',
-            '.description'
+            '[data-automation="description"]',
+            '.description',
+            '.job-details',
+            '.job-summary',
+            '[class*="job-description"]',
+            '[class*="position-description"]',
+            '.content',
+            '.details'
           ]
         };
         
         function findText(selectors) {
           for (let selector of selectors) {
-            const element = document.querySelector(selector);
-            if (element && element.textContent.trim()) {
-              return element.textContent.trim();
+            const elements = document.querySelectorAll(selector);
+            for (let element of elements) {
+              const text = element.textContent.trim();
+              if (text && text.length > 3) {
+                return text;
+              }
             }
           }
           return '';
         }
         
-        const title = findText(selectors.title);
-        const company = findText(selectors.company);
-        const location = findText(selectors.location);
-        const description = findText(selectors.description);
+        // Try to find job information
+        let title = findText(selectors.title);
+        let company = findText(selectors.company);
+        let location = findText(selectors.location);
+        let description = findText(selectors.description);
         
         // Fallback: try to get any text content
         const allText = document.body.textContent || '';
+        
+        // If we still don't have a title, try to extract from page title
+        if (!title || title === 'Job Title Not Found') {
+          const pageTitle = document.title;
+          if (pageTitle && !pageTitle.includes('404') && !pageTitle.includes('Error')) {
+            title = pageTitle.replace(/[-|]/, '').trim();
+          }
+        }
+        
+        // If we don't have company, try to extract from URL or page
+        if (!company || company === 'Company Not Found') {
+          const hostname = window.location.hostname;
+          if (hostname.includes('linkedin.com')) {
+            company = 'LinkedIn';
+          } else if (hostname.includes('indeed.com')) {
+            company = 'Indeed';
+          } else if (hostname.includes('workday.com')) {
+            company = 'Workday';
+          } else if (hostname.includes('greenhouse.io')) {
+            company = 'Greenhouse';
+          } else if (hostname.includes('lever.co')) {
+            company = 'Lever';
+          } else if (hostname.includes('rtx.com')) {
+            company = 'RTX';
+          }
+        }
         
         return {
           title: title || 'Job Title Not Found',
@@ -162,7 +211,14 @@ async function scrapeJobInfo() {
       }
     });
     
-    return results[0].result;
+    const jobInfo = results[0].result;
+    
+    // Validate that we got some useful information
+    if (jobInfo.title === 'Job Title Not Found' && jobInfo.company === 'Company Not Found') {
+      throw new Error('Could not extract job information from this page');
+    }
+    
+    return jobInfo;
   } catch (error) {
     console.error('Error scraping job info:', error);
     throw error;
@@ -451,6 +507,13 @@ async function analyzeJob() {
     console.error('Error analyzing job:', error);
     document.getElementById('loading').style.display = 'none';
     document.getElementById('error').style.display = 'block';
+    
+    // Show more helpful error message
+    const errorElement = document.getElementById('error');
+    errorElement.innerHTML = `
+      <strong>Could not analyze this page</strong><br>
+      <small>Make sure you're on a job posting page. Try refreshing the page and clicking the extension again.</small>
+    `;
   }
 }
 
@@ -497,6 +560,46 @@ document.addEventListener('DOMContentLoaded', () => {
         updateTokenStatus(false);
         alert('Token cleared successfully!');
       });
+    }
+  });
+
+  document.getElementById('manualInput').addEventListener('click', () => {
+    const title = prompt('Enter Job Title:');
+    if (title) {
+      const company = prompt('Enter Company Name:');
+      if (company) {
+        const location = prompt('Enter Location (optional):') || 'Location Not Specified';
+        const description = prompt('Enter Job Description (optional):') || 'No description available';
+        
+        const jobInfo = {
+          title: title,
+          company: company,
+          location: location,
+          description: description,
+          url: window.location.href
+        };
+        
+        // Calculate scores for all resumes
+        const scores = Object.entries(RESUMES).map(([id, resume]) => {
+          const score = calculateScore(jobInfo.description, resume.keywords);
+          return {
+            id,
+            name: resume.name,
+            score
+          };
+        });
+        
+        // Sort by score (highest first)
+        scores.sort((a, b) => b.score.percentage - a.score.percentage);
+        
+        // Hide error and show content
+        document.getElementById('error').style.display = 'none';
+        displayResults(jobInfo, scores);
+        
+        // Store job info and scores for later use
+        window.currentJobInfo = jobInfo;
+        window.currentScores = scores;
+      }
     }
   });
 });
