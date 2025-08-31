@@ -154,12 +154,15 @@
     
     <div class="notion-config">
       <strong>Notion Integration:</strong><br>
-      Add your Notion token and database ID in the extension settings
+      <div id="tokenStatus">Token not configured</div>
+      <button id="configureToken" class="secondary-btn" style="margin-top: 10px; font-size: 12px;">Configure Token</button>
+      <button id="clearToken" class="secondary-btn" style="margin-top: 5px; font-size: 10px; background: #dc3545; display: none;">Clear Token</button>
     </div>
     
     <div class="actions">
       <button id="saveToNotion" class="primary-btn">Save to Notion</button>
       <button id="refreshScores" class="secondary-btn">Refresh</button>
+      <button id="autofillForm" class="primary-btn" style="background: #28a745;">Auto-Fill Application</button>
     </div>
   </div>
   
