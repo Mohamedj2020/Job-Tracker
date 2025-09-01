@@ -19,7 +19,7 @@
     "https://*.ziprecruiter.com/*",
     "https://*.monster.com/*",
     "https://*.careers.rtx.com/*",
-    "https://api.notion.com/*"
+    "https://api.airtable.com/*"
   ],
   "action": {
     "default_popup": "popup.html",

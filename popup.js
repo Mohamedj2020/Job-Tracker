@@ -18,65 +18,46 @@ const RESUMES = {
   }
 };
 
-// Notion configuration - Load from Chrome storage
-let NOTION_CONFIG = {
-  token: '',
-  databaseId: '' // Will be loaded from storage or set manually
+// Airtable configuration - Load from Chrome storage
+let AIRTABLE_CONFIG = {
+  apiKey: '',
+  baseId: 'appHzc7Ckmm3n0Jm6', // Your Airtable base ID
+  tableId: 'tblwop8re7WYVvYOD' // Your table ID
 };
 
-// Load Notion token and database ID from Chrome storage
-chrome.storage.local.get(['notionToken', 'notionDatabaseId'], (result) => {
-  if (result.notionToken) {
-    NOTION_CONFIG.token = result.notionToken;
-    updateTokenStatus(true);
+// Load Airtable API key from Chrome storage
+chrome.storage.local.get(['airtableApiKey'], (result) => {
+  if (result.airtableApiKey) {
+    AIRTABLE_CONFIG.apiKey = result.airtableApiKey;
+    updateApiKeyStatus(true);
   } else {
-    updateTokenStatus(false);
+    updateApiKeyStatus(false);
   }
   
-  if (result.notionDatabaseId) {
-    NOTION_CONFIG.databaseId = result.notionDatabaseId;
-    updateDatabaseStatus(true);
-  } else {
-    // Set default database ID from the new URL
-    NOTION_CONFIG.databaseId = '261904c944e68019a9e2c2395139bc21';
-    chrome.storage.local.set({ notionDatabaseId: '261904c944e68019a9e2c2395139bc21' }, () => {
-      updateDatabaseStatus(true);
-    });
+  // Update database status to show it's configured
+  const databaseStatusElement = document.getElementById('databaseStatus');
+  if (databaseStatusElement) {
+    databaseStatusElement.innerHTML = '✅ Base and Table configured';
+    databaseStatusElement.style.color = '#28a745';
   }
 });
 
-// Update token status display
-function updateTokenStatus(configured) {
+// Update API key status display
+function updateApiKeyStatus(configured) {
   const statusElement = document.getElementById('tokenStatus');
   const buttonElement = document.getElementById('configureToken');
   const clearButton = document.getElementById('clearToken');
   
   if (configured) {
-    statusElement.innerHTML = '✅ Token configured';
+    statusElement.innerHTML = '✅ Airtable API Key configured';
     statusElement.style.color = '#28a745';
-    buttonElement.textContent = 'Change Token';
+    buttonElement.textContent = 'Change API Key';
     clearButton.style.display = 'block';
   } else {
-    statusElement.innerHTML = '❌ Token not configured';
+    statusElement.innerHTML = '❌ Airtable API Key not configured';
     statusElement.style.color = '#dc3545';
-    buttonElement.textContent = 'Configure Token';
+    buttonElement.textContent = 'Configure API Key';
     clearButton.style.display = 'none';
-  }
-}
-
-// Update database status display
-function updateDatabaseStatus(configured) {
-  const statusElement = document.getElementById('databaseStatus');
-  const buttonElement = document.getElementById('configureDatabase');
-  
-  if (configured) {
-    statusElement.innerHTML = '✅ Database ID configured';
-    statusElement.style.color = '#28a745';
-    buttonElement.textContent = 'Change Database ID';
-  } else {
-    statusElement.innerHTML = '❌ Database ID not configured';
-    statusElement.style.color = '#dc3545';
-    buttonElement.textContent = 'Configure Database ID';
   }
 }
 
@@ -285,73 +266,20 @@ async function scrapeJobInfo() {
   }
 }
 
-// Full diagnostic test
-async function runFullDiagnostic() {
-  console.log('🔍 Starting full diagnostic...');
-  
-  // Step 1: Check token
-  if (!NOTION_CONFIG.token) {
-    alert('❌ Step 1: No token configured!\n\nPlease configure your Notion token first.');
-    return;
-  }
-  console.log('✅ Step 1: Token configured');
-  
-  // Step 2: Test token validity
-  try {
-    const response = await fetch('https://api.notion.com/v1/users/me', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${NOTION_CONFIG.token}`,
-        'Notion-Version': '2022-06-28',
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (response.ok) {
-      const userData = await response.json();
-      console.log('✅ Step 2: Token is valid, user:', userData.name);
-    } else {
-      alert('❌ Step 2: Invalid token!\n\nError: ' + response.status + '\nPlease check your integration token.');
-      return;
-    }
-  } catch (error) {
-    alert('❌ Step 2: Token test failed!\n\nError: ' + error.message);
-    return;
-  }
-  
-  // Step 3: Check current database ID
-  if (!NOTION_CONFIG.databaseId) {
-    alert('❌ Step 3: No database ID configured!\n\nPlease configure your database ID.');
-    return;
-  }
-  console.log('✅ Step 3: Database ID configured:', NOTION_CONFIG.databaseId);
-  
-  // Step 4: Test database access
-  await testDatabaseConnection(NOTION_CONFIG.databaseId);
-}
-
-// Test database connection
-async function testDatabaseConnection(databaseId) {
-  if (!NOTION_CONFIG.token) {
-    alert('Please configure your Notion token first!');
+// Test Airtable connection
+async function testAirtableConnection() {
+  if (!AIRTABLE_CONFIG.apiKey) {
+    alert('Please configure your Airtable API key first!');
     return;
   }
 
-  // Format database ID if needed
-  let formattedId = databaseId;
-  if (databaseId.length === 32 && !databaseId.includes('-')) {
-    formattedId = databaseId.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
-  }
-
-  console.log('Testing database connection with ID:', formattedId);
-  console.log('Using token:', NOTION_CONFIG.token.substring(0, 10) + '...');
+  console.log('Testing Airtable connection...');
   
   try {
-    const response = await fetch(`https://api.notion.com/v1/databases/${formattedId}`, {
+    const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_CONFIG.baseId}/${AIRTABLE_CONFIG.tableId}?maxRecords=1`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${NOTION_CONFIG.token}`,
-        'Notion-Version': '2022-06-28',
+        'Authorization': `Bearer ${AIRTABLE_CONFIG.apiKey}`,
         'Content-Type': 'application/json'
       }
     });
@@ -360,21 +288,18 @@ async function testDatabaseConnection(databaseId) {
     
     if (response.ok) {
       const data = await response.json();
-      console.log('Database info:', data);
-      const dbName = data.title?.[0]?.text?.content || 'Unknown';
-      alert('✅ Database connection successful!\n\nDatabase Name: ' + dbName + '\n\nYour integration has full access to this database.');
-    } else if (response.status === 404) {
-      const errorData = await response.json();
-      console.error('404 Error details:', errorData);
-      alert('❌ Database not found.\n\nPossible issues:\n• Database ID is incorrect\n• Database was deleted or moved\n• Integration doesn\'t have access\n\nPlease check:\n1. Go to your database page\n2. Click "Share" (top right)\n3. Find your "job application" integration\n4. Give it "Full access"\n5. Try again');
+      console.log('Airtable connection successful:', data);
+      alert('✅ Airtable connection successful!\n\nYour API key has access to the Job Tracker base.');
     } else if (response.status === 401) {
-      alert('❌ Invalid token.\n\nPlease check:\n• Your integration token is correct\n• Token hasn\'t expired\n• You copied the full token starting with "ntn_"');
+      alert('❌ Invalid API key.\n\nPlease check:\n• Your API key is correct\n• Key hasn\'t expired\n• You copied the full key');
     } else if (response.status === 403) {
-      alert('❌ Access denied.\n\nPlease:\n1. Go to your Application Tracker database\n2. Click "Share" (top right)\n3. Find your "job application" integration\n4. Give it "Full access" (not just "Can view")\n5. Try again');
+      alert('❌ Access denied.\n\nPlease check your API key permissions for this base.');
+    } else if (response.status === 404) {
+      alert('❌ Base or table not found.\n\nPlease check your base ID and table ID.');
     } else {
       const errorData = await response.json();
-      console.error('Notion API error:', errorData);
-      alert(`❌ Error ${response.status}: ${errorData.message || 'Unknown error'}\n\nPlease check your integration settings.`);
+      console.error('Airtable API error:', errorData);
+      alert(`❌ Error ${response.status}: ${errorData.error?.message || 'Unknown error'}\n\nPlease check your API key settings.`);
     }
   } catch (error) {
     console.error('Connection error:', error);
@@ -382,116 +307,58 @@ async function testDatabaseConnection(databaseId) {
   }
 }
 
-// Get database structure to verify column names
-async function getDatabaseStructure() {
-  if (!NOTION_CONFIG.token) {
-    return null;
-  }
-  
-  try {
-    const response = await fetch(`https://api.notion.com/v1/databases/${NOTION_CONFIG.databaseId}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${NOTION_CONFIG.token}`,
-        'Content-Type': 'application/json',
-        'Notion-Version': '2022-06-28'
-      }
-    });
-    
-    if (response.ok) {
-      const database = await response.json();
-      console.log('Database structure:', database.properties);
-      return database.properties;
-    }
-  } catch (error) {
-    console.error('Error getting database structure:', error);
-  }
-  return null;
-}
-
-// Save to Notion
-async function saveToNotion(jobInfo, bestResume) {
-  if (!NOTION_CONFIG.token) {
-    alert('Please configure your Notion integration token first! Click "Configure Token" to set it up.');
+// Save to Airtable
+async function saveToAirtable(jobInfo, bestResume) {
+  if (!AIRTABLE_CONFIG.apiKey) {
+    alert('Please configure your Airtable API key first! Click "Configure API Key" to set it up.');
     return;
   }
   
-  if (!NOTION_CONFIG.databaseId) {
-    alert('Please configure your Notion database ID first! Click "Configure Database ID" to set it up.');
-    return;
-  }
-  
-  // Format the database ID properly
-  let formattedId = NOTION_CONFIG.databaseId;
-  if (NOTION_CONFIG.databaseId.length === 32) {
-    // Add hyphens to format as UUID
-    formattedId = NOTION_CONFIG.databaseId.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
-  }
-  
-  console.log('Saving to database with ID:', formattedId);
+  console.log('Saving to Airtable base:', AIRTABLE_CONFIG.baseId);
   
   try {
-    const response = await fetch(`https://api.notion.com/v1/pages`, {
+    const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_CONFIG.baseId}/${AIRTABLE_CONFIG.tableId}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${NOTION_CONFIG.token}`,
-        'Content-Type': 'application/json',
-        'Notion-Version': '2022-06-28'
+        'Authorization': `Bearer ${AIRTABLE_CONFIG.apiKey}`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        parent: { database_id: formattedId },
-        properties: {
-          'Company': {
-            title: [{ text: { content: jobInfo.company } }]
-          },
-          'Job Link': {
-            url: jobInfo.url
-          },
-          'Status': {
-            select: { name: 'Applied' }
-          },
-          'Contact Name': {
-            rich_text: [{ text: { content: 'Auto-filled by Job Matcher' } }]
-          },
-          'Contact Email': {
-            rich_text: [{ text: { content: 'Auto-filled by Job Matcher' } }]
-          },
-          'Last Communication': {
-            date: { start: new Date().toISOString() }
-          },
-          'Salary': {
-            rich_text: [{ text: { content: 'Not specified' } }]
-          },
-          'Rating': {
-            number: bestResume.score.percentage
+        records: [
+          {
+            fields: {
+              'Name': jobInfo.title || 'Unknown Job Title',
+              'Notes': `Company: ${jobInfo.company || 'Unknown'}\nLocation: ${jobInfo.location || 'Unknown'}\nLink: ${jobInfo.url || ''}\nResume Used: ${bestResume.name}\nMatch Score: ${bestResume.score.percentage}%\nDescription: ${jobInfo.description ? jobInfo.description.substring(0, 1000) + '...' : 'No description available'}`,
+              'Status': 'Todo'
+            }
           }
-        }
+        ]
       })
     });
     
     if (response.ok) {
       const result = await response.json();
-      console.log('Successfully saved to Notion:', result);
-      alert('✅ Job saved to Notion successfully!\n\nCheck your Application Tracker database for the new entry.');
+      console.log('Successfully saved to Airtable:', result);
+      alert('✅ Job saved to Airtable successfully!\n\nCheck your Job Tracker base for the new entry.');
     } else {
-      const errorData = await response.text();
-      console.error('Notion API error:', errorData);
+      const errorData = await response.json();
+      console.error('Airtable API error:', errorData);
       
-      let errorMessage = `Failed to save to Notion: ${response.status} ${response.statusText}`;
+      let errorMessage = `Failed to save to Airtable: ${response.status} ${response.statusText}`;
       
-      if (response.status === 404) {
-        errorMessage = 'Database not found. Please check your database ID and make sure your integration has access to the database.';
-      } else if (response.status === 401) {
-        errorMessage = 'Invalid token. Please check your Notion integration token.';
+      if (response.status === 401) {
+        errorMessage = 'Invalid API key. Please check your Airtable API key.';
       } else if (response.status === 403) {
-        errorMessage = 'Access denied. Please make sure your integration has permission to access the database.';
+        errorMessage = 'Access denied. Please check your API key permissions.';
+      } else if (response.status === 404) {
+        errorMessage = 'Base or table not found. Please check your base ID and table ID.';
       }
       
       throw new Error(errorMessage);
     }
   } catch (error) {
-    console.error('Error saving to Notion:', error);
-    alert(`Error saving to Notion: ${error.message}\n\nPlease check your token and database permissions.`);
+    console.error('Error saving to Airtable:', error);
+    alert(`Error saving to Airtable: ${error.message}\n\nPlease check your API key and permissions.`);
   }
 }
 
@@ -765,11 +632,11 @@ document.addEventListener('DOMContentLoaded', () => {
   
   document.getElementById('saveToNotion').addEventListener('click', () => {
     if (window.currentJobInfo && window.currentScores && window.currentScores.length > 0) {
-      saveToNotion(window.currentJobInfo, window.currentScores[0]);
+      saveToAirtable(window.currentJobInfo, window.currentScores[0]);
     } else if (window.currentJobInfo) {
       // If we have job info but no scores, create a default score
       const defaultResume = { name: 'Software Engineer', score: { percentage: 0 } };
-      saveToNotion(window.currentJobInfo, defaultResume);
+      saveToAirtable(window.currentJobInfo, defaultResume);
     } else {
       alert('No job information available. Please try refreshing or use manual input.');
     }
@@ -795,89 +662,34 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('configureToken').addEventListener('click', () => {
-    const token = prompt('Enter your Notion Integration Token:');
-    if (token && token.trim()) {
-      chrome.storage.local.set({ notionToken: token.trim() }, () => {
-        NOTION_CONFIG.token = token.trim();
-        updateTokenStatus(true);
-        alert('Token saved successfully!');
+    const apiKey = prompt('Enter your Airtable API Key:\n\nGet it from: https://airtable.com/create/tokens\n\nMake sure it has access to your Job Tracker base.');
+    if (apiKey && apiKey.trim()) {
+      chrome.storage.local.set({ airtableApiKey: apiKey.trim() }, () => {
+        AIRTABLE_CONFIG.apiKey = apiKey.trim();
+        updateApiKeyStatus(true);
+        alert('API Key saved successfully!');
       });
     }
   });
 
   document.getElementById('clearToken').addEventListener('click', () => {
-    if (confirm('Are you sure you want to clear your Notion token?')) {
-      chrome.storage.local.remove(['notionToken'], () => {
-        NOTION_CONFIG.token = '';
-        updateTokenStatus(false);
-        alert('Token cleared successfully!');
+    if (confirm('Are you sure you want to clear your Airtable API key?')) {
+      chrome.storage.local.remove(['airtableApiKey'], () => {
+        AIRTABLE_CONFIG.apiKey = '';
+        updateApiKeyStatus(false);
+        alert('API Key cleared successfully!');
       });
     }
   });
 
+  // Database configuration is not needed for Airtable - it's pre-configured
   document.getElementById('configureDatabase').addEventListener('click', () => {
-    const choice = prompt('Choose an approach:\n\n1. 🔍 Full Diagnostic Test\n2. 📋 Manual Database ID Entry\n3. 🔗 Auto-extract from current page\n4. 🆕 Create New Database\n\nEnter 1, 2, 3, or 4:');
+    const choice = prompt('Choose an option:\n\n1. 🔍 Test Connection\n2. 📋 View Configuration\n\nEnter 1 or 2:');
     
     if (choice === '1') {
-      // Full diagnostic test
-      runFullDiagnostic();
+      testAirtableConnection();
     } else if (choice === '2') {
-      const databaseId = prompt('Enter your Notion Database ID:\n\nFrom your URL: https://www.notion.so/Application-Tracker-1aa904c944e681eb80d2fd4dc7bc098a\n\nCopy this part: 1aa904c944e681eb80d2fd4dc7bc098a\n\n(Just paste it as-is, the extension will format it automatically)');
-      if (databaseId && databaseId.trim()) {
-        chrome.storage.local.set({ notionDatabaseId: databaseId.trim() }, () => {
-          NOTION_CONFIG.databaseId = databaseId.trim();
-          updateDatabaseStatus(true);
-          testDatabaseConnection(databaseId.trim());
-        });
-      }
-    } else if (choice === '3') {
-      // Try to get database ID from current Notion page
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        const url = tabs[0].url;
-        console.log('Current URL:', url);
-        
-        if (url.includes('notion.so')) {
-          // Try multiple patterns to extract database ID
-          let databaseId = null;
-          
-          // Pattern 1: Application-Tracker-{32 chars}
-          let match = url.match(/Application-Tracker-([a-f0-9]{32})/);
-          if (match) {
-            databaseId = match[1];
-          }
-          
-          // Pattern 2: Direct 32-character hex string
-          if (!databaseId) {
-            match = url.match(/([a-f0-9]{32})/);
-            if (match) {
-              databaseId = match[1];
-            }
-          }
-          
-          // Pattern 3: UUID format with hyphens
-          if (!databaseId) {
-            match = url.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/);
-            if (match) {
-              databaseId = match[1].replace(/-/g, ''); // Remove hyphens
-            }
-          }
-          
-          if (databaseId) {
-            console.log('Extracted database ID:', databaseId);
-            chrome.storage.local.set({ notionDatabaseId: databaseId }, () => {
-              NOTION_CONFIG.databaseId = databaseId;
-              updateDatabaseStatus(true);
-              testDatabaseConnection(databaseId);
-            });
-          } else {
-            alert('Could not find database ID in current URL.\n\nURL: ' + url + '\n\nPlease make sure you are on your Application Tracker database page and try again.');
-          }
-        } else {
-          alert('Please navigate to your Application Tracker database page first, then try again.');
-        }
-      });
-    } else if (choice === '4') {
-      alert('To create a new database:\n\n1. Go to Notion\n2. Create a new page\n3. Type "/database" and select "Table"\n4. Add these columns:\n   - Company (Title)\n   - Job Link (URL)\n   - Status (Select)\n   - Contact Name (Text)\n   - Contact Email (Email)\n   - Last Communication (Date)\n   - Salary (Number)\n   - Rating (Select)\n5. Share it with your integration\n6. Copy the database ID from the URL');
+      alert('Airtable Configuration:\n\nBase ID: ' + AIRTABLE_CONFIG.baseId + '\nTable ID: ' + AIRTABLE_CONFIG.tableId + '\n\nYou only need to configure your API key.');
     }
   });
 
