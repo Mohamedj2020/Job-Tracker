@@ -21,10 +21,9 @@ const RESUMES = {
 // Airtable configuration - Load from Chrome storage
 let AIRTABLE_CONFIG = {
   apiKey: '',
-  baseId: 'appHzc7Ckmm3n0Jm6', // Your Airtable base ID
-  tableId: 'appJczg3KLNlLOiSk' // Your table ID
+  baseId: 'appJczg3KLNlLOiSk', // Your Airtable base ID
+  tableId: 'tblVLjTgwr6DP7P6e' // Your table ID
 };
-
 // Load Airtable API key from Chrome storage
 chrome.storage.local.get(['airtableApiKey'], (result) => {
   if (result.airtableApiKey) {
