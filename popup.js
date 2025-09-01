@@ -18,6 +18,14 @@ const RESUMES = {
   }
 };
 
+// Resume links - these would normally be the actual links to the resume files
+const RESUME_LINKS = {
+  'pm': 'https://yourdomain.com/resume-pm.pdf',
+  'swe': 'https://yourdomain.com/resume-swe.pdf',
+  'cyber': 'https://yourdomain.com/resume-cyber.pdf',
+  'consulting': 'https://yourdomain.com/resume-consulting.pdf'
+};
+
 // Airtable configuration - Load from Chrome storage
 let AIRTABLE_CONFIG = {
   apiKey: '',
@@ -310,7 +318,8 @@ async function saveToAirtable(jobInfo, bestResume) {
               "Company": jobInfo.company || 'Unknown',
               "Location": jobInfo.location || 'Unknown',
               "Job Link": jobInfo.url || '',
-              "Resume Used": [], // You can attach files here if needed
+              "Resume Used": bestResume.name || '',
+              "Resume Link": RESUME_LINKS[bestResume.id] || '', // <-- Add this line
               "Match Score": bestResume.score.percentage || 0,
               "Description": jobInfo.description ? jobInfo.description.substring(0, 1000) + '...' : 'No description available',
               "Status": "Todo"
@@ -563,6 +572,18 @@ function displayResults(jobInfo, scores) {
     } else {
       // Show default message if no scores
       scoresContainer.innerHTML = '<div style="text-align: center; color: #666; padding: 20px;">No resume matches available</div>';
+    }
+    
+    // Show resume link for best match
+    if (scores && scores.length > 0) {
+      const bestResume = scores[0];
+      const resumeLink = RESUME_LINKS[bestResume.id];
+      if (resumeLink) {
+        const linkDiv = document.createElement('div');
+        linkDiv.className = 'resume-preview';
+        linkDiv.innerHTML = `<a href="${resumeLink}" target="_blank">View Resume (${bestResume.name})</a>`;
+        scoresContainer.prepend(linkDiv);
+      }
     }
   } catch (error) {
     console.error('Error in displayResults:', error);
