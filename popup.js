@@ -281,6 +281,47 @@ async function scrapeJobInfo() {
   }
 }
 
+// Test database connection
+async function testDatabaseConnection(databaseId) {
+  if (!NOTION_CONFIG.token) {
+    alert('Please configure your token first!');
+    return;
+  }
+  
+  try {
+    const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${NOTION_CONFIG.token}`,
+        'Content-Type': 'application/json',
+        'Notion-Version': '2022-06-28'
+      }
+    });
+    
+    if (response.ok) {
+      const database = await response.json();
+      console.log('Database connection successful:', database);
+      alert('✅ Database connection successful!\n\nDatabase: ' + database.title[0].text.content);
+    } else {
+      const errorData = await response.text();
+      console.error('Database test failed:', errorData);
+      
+      if (response.status === 404) {
+        alert('❌ Database not found!\n\nPlease check:\n1. Database ID is correct\n2. Integration has access to the database\n3. Database exists and is shared with your integration');
+      } else if (response.status === 401) {
+        alert('❌ Invalid token!\n\nPlease check your Notion integration token.');
+      } else if (response.status === 403) {
+        alert('❌ Access denied!\n\nPlease make sure your integration has permission to access the database.');
+      } else {
+        alert('❌ Connection failed!\n\nError: ' + response.status + ' ' + response.statusText);
+      }
+    }
+  } catch (error) {
+    console.error('Error testing database connection:', error);
+    alert('❌ Connection error!\n\n' + error.message);
+  }
+}
+
 // Get database structure to verify column names
 async function getDatabaseStructure() {
   if (!NOTION_CONFIG.token) {
@@ -706,12 +747,14 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('configureDatabase').addEventListener('click', () => {
-    const databaseId = prompt('Enter your Notion Database ID:\n\nTo find this:\n1. Open your Application Tracker database\n2. Copy the ID from the URL\n3. Format it with hyphens (e.g., 1aa904c9-44e6-81eb-80d2-fd4dc7bc098a)');
+    const databaseId = prompt('Enter your Notion Database ID:\n\nTo find this:\n1. Open your Application Tracker database\n2. Copy the ID from the URL (after "Application-Tracker-")\n3. Format it with hyphens (e.g., 1aa904c9-44e6-81eb-80d2-fd4dc7bc098a)\n\nCurrent URL format: https://www.notion.so/Application-Tracker-[DATABASE_ID]');
     if (databaseId && databaseId.trim()) {
       chrome.storage.local.set({ notionDatabaseId: databaseId.trim() }, () => {
         NOTION_CONFIG.databaseId = databaseId.trim();
         updateDatabaseStatus(true);
-        alert('Database ID saved successfully!');
+        
+        // Test the database connection
+        testDatabaseConnection(databaseId.trim());
       });
     }
   });
