@@ -284,50 +284,52 @@ async function scrapeJobInfo() {
 // Test database connection
 async function testDatabaseConnection(databaseId) {
   if (!NOTION_CONFIG.token) {
-    alert('Please configure your token first!');
+    alert('Please configure your Notion token first!');
     return;
   }
-  
-  // Format the database ID properly
+
+  // Format database ID if needed
   let formattedId = databaseId;
-  if (databaseId.length === 32) {
-    // Add hyphens to format as UUID
+  if (databaseId.length === 32 && !databaseId.includes('-')) {
     formattedId = databaseId.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
   }
-  
+
   console.log('Testing database connection with ID:', formattedId);
+  console.log('Using token:', NOTION_CONFIG.token.substring(0, 10) + '...');
   
   try {
     const response = await fetch(`https://api.notion.com/v1/databases/${formattedId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${NOTION_CONFIG.token}`,
-        'Content-Type': 'application/json',
-        'Notion-Version': '2022-06-28'
+        'Notion-Version': '2022-06-28',
+        'Content-Type': 'application/json'
       }
     });
+
+    console.log('Response status:', response.status);
     
     if (response.ok) {
-      const database = await response.json();
-      console.log('Database connection successful:', database);
-      alert('✅ Database connection successful!\n\nDatabase: ' + database.title[0].text.content);
+      const data = await response.json();
+      console.log('Database info:', data);
+      const dbName = data.title?.[0]?.text?.content || 'Unknown';
+      alert('✅ Database connection successful!\n\nDatabase Name: ' + dbName + '\n\nYour integration has full access to this database.');
+    } else if (response.status === 404) {
+      const errorData = await response.json();
+      console.error('404 Error details:', errorData);
+      alert('❌ Database not found.\n\nPossible issues:\n• Database ID is incorrect\n• Database was deleted or moved\n• Integration doesn\'t have access\n\nPlease check:\n1. Go to your database page\n2. Click "Share" (top right)\n3. Find your "job application" integration\n4. Give it "Full access"\n5. Try again');
+    } else if (response.status === 401) {
+      alert('❌ Invalid token.\n\nPlease check:\n• Your integration token is correct\n• Token hasn\'t expired\n• You copied the full token starting with "ntn_"');
+    } else if (response.status === 403) {
+      alert('❌ Access denied.\n\nPlease:\n1. Go to your Application Tracker database\n2. Click "Share" (top right)\n3. Find your "job application" integration\n4. Give it "Full access" (not just "Can view")\n5. Try again');
     } else {
-      const errorData = await response.text();
-      console.error('Database test failed:', errorData);
-      
-      if (response.status === 404) {
-        alert('❌ Database not found!\n\nPlease check:\n1. Database ID is correct\n2. Integration has access to the database\n3. Database exists and is shared with your integration');
-      } else if (response.status === 401) {
-        alert('❌ Invalid token!\n\nPlease check your Notion integration token.');
-      } else if (response.status === 403) {
-        alert('❌ Access denied!\n\nPlease make sure your integration has permission to access the database.');
-      } else {
-        alert('❌ Connection failed!\n\nError: ' + response.status + ' ' + response.statusText);
-      }
+      const errorData = await response.json();
+      console.error('Notion API error:', errorData);
+      alert(`❌ Error ${response.status}: ${errorData.message || 'Unknown error'}\n\nPlease check your integration settings.`);
     }
   } catch (error) {
-    console.error('Error testing database connection:', error);
-    alert('❌ Connection error!\n\n' + error.message);
+    console.error('Connection error:', error);
+    alert(`❌ Connection failed: ${error.message}\n\nPlease check your internet connection and try again.`);
   }
 }
 
