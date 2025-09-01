@@ -281,6 +281,51 @@ async function scrapeJobInfo() {
   }
 }
 
+// Full diagnostic test
+async function runFullDiagnostic() {
+  console.log('🔍 Starting full diagnostic...');
+  
+  // Step 1: Check token
+  if (!NOTION_CONFIG.token) {
+    alert('❌ Step 1: No token configured!\n\nPlease configure your Notion token first.');
+    return;
+  }
+  console.log('✅ Step 1: Token configured');
+  
+  // Step 2: Test token validity
+  try {
+    const response = await fetch('https://api.notion.com/v1/users/me', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${NOTION_CONFIG.token}`,
+        'Notion-Version': '2022-06-28',
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      const userData = await response.json();
+      console.log('✅ Step 2: Token is valid, user:', userData.name);
+    } else {
+      alert('❌ Step 2: Invalid token!\n\nError: ' + response.status + '\nPlease check your integration token.');
+      return;
+    }
+  } catch (error) {
+    alert('❌ Step 2: Token test failed!\n\nError: ' + error.message);
+    return;
+  }
+  
+  // Step 3: Check current database ID
+  if (!NOTION_CONFIG.databaseId) {
+    alert('❌ Step 3: No database ID configured!\n\nPlease configure your database ID.');
+    return;
+  }
+  console.log('✅ Step 3: Database ID configured:', NOTION_CONFIG.databaseId);
+  
+  // Step 4: Test database access
+  await testDatabaseConnection(NOTION_CONFIG.databaseId);
+}
+
 // Test database connection
 async function testDatabaseConnection(databaseId) {
   if (!NOTION_CONFIG.token) {
@@ -767,9 +812,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('configureDatabase').addEventListener('click', () => {
-    const choice = prompt('Choose how to get your Database ID:\n\n1. Enter manually\n2. Get from current Notion page\n3. Get exact ID from database settings\n\nEnter 1, 2, or 3:');
+    const choice = prompt('Choose an approach:\n\n1. 🔍 Full Diagnostic Test\n2. 📋 Manual Database ID Entry\n3. 🔗 Auto-extract from current page\n4. 🆕 Create New Database\n\nEnter 1, 2, 3, or 4:');
     
     if (choice === '1') {
+      // Full diagnostic test
+      runFullDiagnostic();
+    } else if (choice === '2') {
       const databaseId = prompt('Enter your Notion Database ID:\n\nFrom your URL: https://www.notion.so/Application-Tracker-1aa904c944e681eb80d2fd4dc7bc098a\n\nCopy this part: 1aa904c944e681eb80d2fd4dc7bc098a\n\n(Just paste it as-is, the extension will format it automatically)');
       if (databaseId && databaseId.trim()) {
         chrome.storage.local.set({ notionDatabaseId: databaseId.trim() }, () => {
@@ -778,7 +826,7 @@ document.addEventListener('DOMContentLoaded', () => {
           testDatabaseConnection(databaseId.trim());
         });
       }
-    } else if (choice === '2') {
+    } else if (choice === '3') {
       // Try to get database ID from current Notion page
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const url = tabs[0].url;
@@ -824,8 +872,8 @@ document.addEventListener('DOMContentLoaded', () => {
           alert('Please navigate to your Application Tracker database page first, then try again.');
         }
       });
-    } else if (choice === '3') {
-      alert('To get the exact database ID:\n\n1. Go to your Application Tracker database\n2. Click the "..." menu (three dots) next to the database title\n3. Click "Copy link"\n4. The link will contain the correct database ID\n\nThen choose option 1 to enter it manually.');
+    } else if (choice === '4') {
+      alert('To create a new database:\n\n1. Go to Notion\n2. Create a new page\n3. Type "/database" and select "Table"\n4. Add these columns:\n   - Company (Title)\n   - Job Link (URL)\n   - Status (Select)\n   - Contact Name (Text)\n   - Contact Email (Email)\n   - Last Communication (Date)\n   - Salary (Number)\n   - Rating (Select)\n5. Share it with your integration\n6. Copy the database ID from the URL');
     }
   });
 
