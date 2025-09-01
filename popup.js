@@ -765,14 +765,36 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('configureDatabase').addEventListener('click', () => {
-    const databaseId = prompt('Enter your Notion Database ID:\n\nFrom your URL: https://www.notion.so/Application-Tracker-1aa904c944e681eb80d2fd4dc7bc098a\n\nCopy this part: 1aa904c944e681eb80d2fd4dc7bc098a\n\n(Just paste it as-is, the extension will format it automatically)');
-    if (databaseId && databaseId.trim()) {
-      chrome.storage.local.set({ notionDatabaseId: databaseId.trim() }, () => {
-        NOTION_CONFIG.databaseId = databaseId.trim();
-        updateDatabaseStatus(true);
-        
-        // Test the database connection
-        testDatabaseConnection(databaseId.trim());
+    const choice = prompt('Choose how to get your Database ID:\n\n1. Enter manually\n2. Get from current Notion page\n\nEnter 1 or 2:');
+    
+    if (choice === '1') {
+      const databaseId = prompt('Enter your Notion Database ID:\n\nFrom your URL: https://www.notion.so/Application-Tracker-1aa904c944e681eb80d2fd4dc7bc098a\n\nCopy this part: 1aa904c944e681eb80d2fd4dc7bc098a\n\n(Just paste it as-is, the extension will format it automatically)');
+      if (databaseId && databaseId.trim()) {
+        chrome.storage.local.set({ notionDatabaseId: databaseId.trim() }, () => {
+          NOTION_CONFIG.databaseId = databaseId.trim();
+          updateDatabaseStatus(true);
+          testDatabaseConnection(databaseId.trim());
+        });
+      }
+    } else if (choice === '2') {
+      // Try to get database ID from current Notion page
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        const url = tabs[0].url;
+        if (url.includes('notion.so')) {
+          const match = url.match(/Application-Tracker-([a-f0-9]{32})/);
+          if (match) {
+            const databaseId = match[1];
+            chrome.storage.local.set({ notionDatabaseId: databaseId }, () => {
+              NOTION_CONFIG.databaseId = databaseId;
+              updateDatabaseStatus(true);
+              testDatabaseConnection(databaseId);
+            });
+          } else {
+            alert('Could not find database ID in current URL. Please make sure you are on your Application Tracker database page.');
+          }
+        } else {
+          alert('Please navigate to your Application Tracker database page first, then try again.');
+        }
       });
     }
   });
