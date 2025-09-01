@@ -198,14 +198,11 @@ async function scrapeJobInfo() {
               company = titleCompanyMatch[1].trim();
             }
           }
-          // If still not found, look for "AMD" or other known company names in description
+          // If still not found, extract from URL
           if (!company || company === 'Company Not Found') {
-            const knownCompanies = ['AMD', 'Google', 'Microsoft', 'Amazon', 'Meta', 'Apple'];
-            for (const comp of knownCompanies) {
-              if (description.includes(comp)) {
-                company = comp;
-                break;
-              }
+            const urlParts = window.location.href.split('/');
+            if (urlParts.length > 2) {
+              company = urlParts[2].replace('www.', '').replace('.com', '').replace('.net', '').replace('.org', '');
             }
           }
           // If still not found, use hostname as last resort
@@ -232,6 +229,10 @@ async function scrapeJobInfo() {
             location = 'Not Specified';
           }
         }
+        
+        // Limit company and location length
+        company = company.length > 40 ? company.substring(0, 40) + '...' : company;
+        location = location.length > 60 ? location.substring(0, 60) + '...' : location;
         
         return {
           title: title || 'Job Title Not Found',
@@ -391,8 +392,8 @@ async function autofillApplicationForm(jobInfo, bestResume) {
           city: 'Your City', // Update this
           state: 'Your State', // Update this
           zip: 'Your ZIP', // Update this
-          linkedin: 'https://linkedin.com/in/yourprofile', // Update this
-          portfolio: 'https://yourportfolio.com' // Update this
+          linkedin: 'https://linkedin.com/in/mohamed-jirac', // Update this
+          portfolio: 'mohamedjirac.dev' // Update this
         };
 
         function fillField(selectors, value) {
