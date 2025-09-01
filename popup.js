@@ -288,8 +288,17 @@ async function testDatabaseConnection(databaseId) {
     return;
   }
   
+  // Format the database ID properly
+  let formattedId = databaseId;
+  if (databaseId.length === 32) {
+    // Add hyphens to format as UUID
+    formattedId = databaseId.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+  }
+  
+  console.log('Testing database connection with ID:', formattedId);
+  
   try {
-    const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}`, {
+    const response = await fetch(`https://api.notion.com/v1/databases/${formattedId}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${NOTION_CONFIG.token}`,
@@ -361,6 +370,15 @@ async function saveToNotion(jobInfo, bestResume) {
     return;
   }
   
+  // Format the database ID properly
+  let formattedId = NOTION_CONFIG.databaseId;
+  if (NOTION_CONFIG.databaseId.length === 32) {
+    // Add hyphens to format as UUID
+    formattedId = NOTION_CONFIG.databaseId.replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+  }
+  
+  console.log('Saving to database with ID:', formattedId);
+  
   try {
     const response = await fetch(`https://api.notion.com/v1/pages`, {
       method: 'POST',
@@ -370,7 +388,7 @@ async function saveToNotion(jobInfo, bestResume) {
         'Notion-Version': '2022-06-28'
       },
       body: JSON.stringify({
-        parent: { database_id: NOTION_CONFIG.databaseId },
+        parent: { database_id: formattedId },
         properties: {
           'Company': {
             title: [{ text: { content: jobInfo.company } }]
@@ -747,7 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('configureDatabase').addEventListener('click', () => {
-    const databaseId = prompt('Enter your Notion Database ID:\n\nTo find this:\n1. Open your Application Tracker database\n2. Copy the ID from the URL (after "Application-Tracker-")\n3. Format it with hyphens (e.g., 1aa904c9-44e6-81eb-80d2-fd4dc7bc098a)\n\nCurrent URL format: https://www.notion.so/Application-Tracker-[DATABASE_ID]');
+    const databaseId = prompt('Enter your Notion Database ID:\n\nFrom your URL: https://www.notion.so/Application-Tracker-1aa904c944e681eb80d2fd4dc7bc098a\n\nCopy this part: 1aa904c944e681eb80d2fd4dc7bc098a\n\n(Just paste it as-is, the extension will format it automatically)');
     if (databaseId && databaseId.trim()) {
       chrome.storage.local.set({ notionDatabaseId: databaseId.trim() }, () => {
         NOTION_CONFIG.databaseId = databaseId.trim();
