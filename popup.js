@@ -738,19 +738,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   
+  // Load pdf.js and mammoth.js (add their scripts to popup.html or load via CDN)
+  async function extractTextFromPDF(file) {
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let text = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(item => item.str).join(' ');
+    }
+    return text;
+  }
+
+  async function extractTextFromDOCX(file) {
+    const arrayBuffer = await file.arrayBuffer();
+    const result = await window.mammoth.extractRawText({ arrayBuffer });
+    return result.value;
+  }
+
   document.getElementById('resumeUpload').addEventListener('change', async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Read file as text (works for .txt, partial for .pdf/.docx)
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const resumeText = e.target.result;
-      const jobDesc = window.currentJobInfo?.description || '';
-      const score = calculateScore(jobDesc, resumeText);
-      displayUploadedResumeScore(score);
-    };
-    reader.readAsText(file);
+    let resumeText = '';
+    if (file.type === 'application/pdf') {
+      resumeText = await extractTextFromPDF(file);
+    } else if (
+      file.name.endsWith('.docx') ||
+      file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
+      resumeText = await extractTextFromDOCX(file);
+    } else if (file.type.startsWith('text/')) {
+      resumeText = await file.text();
+    } else {
+      alert('Unsupported file type. Please upload PDF, DOCX, or TXT.');
+      return;
+    }
+
+    const jobDesc = window.currentJobInfo?.description || '';
+    const score = calculateScore(jobDesc, resumeText);
+    displayUploadedResumeScore(score);
   });
 
   function displayUploadedResumeScore(score) {
