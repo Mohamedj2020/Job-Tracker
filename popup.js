@@ -184,60 +184,42 @@ async function scrapeJobInfo() {
         let location = findText(selectors.location);
         let description = findText(selectors.description);
         
-        // Fallback: try to get any text content
-        const allText = document.body.textContent || '';
-        
-        // If we still don't have a title, try to extract from page title
-        if (!title || title === 'Job Title Not Found') {
-          const pageTitle = document.title;
-          if (pageTitle && !pageTitle.includes('404') && !pageTitle.includes('Error')) {
-            title = pageTitle.replace(/[-|]/, '').trim();
-          }
-        }
-        
-        // If we don't have company, try to extract from URL or page
+        // Fallback for company
         if (!company || company === 'Company Not Found') {
-          const hostname = window.location.hostname;
-          const url = window.location.href;
-          
-          // Try to extract company from various sources
-          if (hostname.includes('linkedin.com')) {
-            company = 'LinkedIn';
-          } else if (hostname.includes('indeed.com')) {
-            company = 'Indeed';
-          } else if (hostname.includes('workday.com')) {
-            company = 'Workday';
-          } else if (hostname.includes('greenhouse.io')) {
-            company = 'Greenhouse';
-          } else if (hostname.includes('lever.co')) {
-            company = 'Lever';
-          } else if (hostname.includes('rtx.com') || url.includes('rtx.com')) {
-            company = 'RTX';
-          } else if (hostname.includes('careers.rtx.com')) {
-            company = 'RTX';
+          // Try to extract company from job description
+          const descMatch = description.match(/(?:Company|Employer|Organization):?\s*([^\n]+)/i);
+          if (descMatch && descMatch[1]) {
+            company = descMatch[1].trim();
           } else {
-            // Try to extract from page content
-            const companyElements = document.querySelectorAll('[class*="company"], [class*="employer"], [class*="organization"]');
-            for (let element of companyElements) {
-              const text = element.textContent.trim();
-              if (text && text.length > 2 && text.length < 50) {
-                company = text;
-                break;
-              }
+            // Try to extract from page title
+            const pageTitle = document.title;
+            const titleMatch = pageTitle.match(/at\s+([^\-|]+)/i);
+            if (titleMatch && titleMatch[1]) {
+              company = titleMatch[1].trim();
             }
           }
+          // If still not found, use hostname as last resort
+          if (!company || company === 'Company Not Found') {
+            company = window.location.hostname.replace('www.', '').split('.')[0];
+          }
         }
-        
-        // If we don't have location, try to extract from page
+
+        // Fallback for location
         if (!location || location === 'Location Not Found' || location === 'Locations') {
-          const locationElements = document.querySelectorAll('[class*="location"], [class*="place"], [class*="city"]');
-          for (let element of locationElements) {
-            const text = element.textContent.trim();
-            if (text && text.length > 3 && text.length < 100 && 
-                (text.includes(',') || text.includes('United States') || text.includes('Remote'))) {
-              location = text;
-              break;
+          // Try to extract location from job description
+          const locMatch = description.match(/Location:?\s*([^\n]+)/i);
+          if (locMatch && locMatch[1]) {
+            location = locMatch[1].trim();
+          } else {
+            // Try to extract from job details section
+            const detailsMatch = description.match(/(?:Austin|TX|Colorado|Remote|United States|Massachusetts|Longmont)/i);
+            if (detailsMatch) {
+              location = detailsMatch[0];
             }
+          }
+          // If still not found, use 'Not Specified'
+          if (!location || location === 'Location Not Found') {
+            location = 'Not Specified';
           }
         }
         
