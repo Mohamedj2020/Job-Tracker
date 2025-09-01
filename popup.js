@@ -737,5 +737,35 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+  
+  document.getElementById('resumeUpload').addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Read file as text (works for .txt, partial for .pdf/.docx)
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const resumeText = e.target.result;
+      const jobDesc = window.currentJobInfo?.description || '';
+      const score = calculateScore(jobDesc, resumeText);
+      displayUploadedResumeScore(score);
+    };
+    reader.readAsText(file);
+  });
+
+  function displayUploadedResumeScore(score) {
+    const scoreDiv = document.getElementById('uploadedResumeScore');
+    scoreDiv.innerHTML = `
+      <div class="resume-score score-${score.grade.toLowerCase()}">
+        <div>
+          <div class="resume-name">Uploaded Resume</div>
+        </div>
+        <div class="score-details">
+          <div class="score-percent">${score.percentage}%</div>
+          <div class="score-grade">${score.grade}</div>
+        </div>
+      </div>
+    `;
+  }
 });
 

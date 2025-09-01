@@ -125,6 +125,12 @@
       margin-bottom: 15px;
       font-size: 12px;
     }
+
+    .file-input {
+      margin-top: 10px;
+      margin-bottom: 10px;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -153,6 +159,8 @@
     <div class="resume-scores">
       <h3>Resume Matches</h3>
       <div id="resumeScores"></div>
+      <input type="file" id="resumeUpload" accept=".pdf,.doc,.docx,.txt" class="file-input" />
+      <div id="uploadedResumeScore"></div>
     </div>
     
     <div class="notion-config">
