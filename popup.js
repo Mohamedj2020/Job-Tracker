@@ -183,19 +183,29 @@ async function scrapeJobInfo() {
         let company = findText(selectors.company);
         let location = findText(selectors.location);
         let description = findText(selectors.description);
-        
-        // Fallback for company
+
+        // Improved fallback for company
         if (!company || company === 'Company Not Found') {
-          // Try to extract company from job description
-          const descMatch = description.match(/(?:Company|Employer|Organization):?\s*([^\n]+)/i);
-          if (descMatch && descMatch[1]) {
-            company = descMatch[1].trim();
+          // Try to extract company from job description using a more robust regex
+          const descCompanyMatch = description.match(/at\s+([A-Za-z0-9 &\-,\.]+)/i);
+          if (descCompanyMatch && descCompanyMatch[1]) {
+            company = descCompanyMatch[1].trim();
           } else {
             // Try to extract from page title
             const pageTitle = document.title;
-            const titleMatch = pageTitle.match(/at\s+([^\-|]+)/i);
-            if (titleMatch && titleMatch[1]) {
-              company = titleMatch[1].trim();
+            const titleCompanyMatch = pageTitle.match(/at\s+([A-Za-z0-9 &\-,\.]+)/i);
+            if (titleCompanyMatch && titleCompanyMatch[1]) {
+              company = titleCompanyMatch[1].trim();
+            }
+          }
+          // If still not found, look for "AMD" or other known company names in description
+          if (!company || company === 'Company Not Found') {
+            const knownCompanies = ['AMD', 'Google', 'Microsoft', 'Amazon', 'Meta', 'Apple'];
+            for (const comp of knownCompanies) {
+              if (description.includes(comp)) {
+                company = comp;
+                break;
+              }
             }
           }
           // If still not found, use hostname as last resort
@@ -204,15 +214,15 @@ async function scrapeJobInfo() {
           }
         }
 
-        // Fallback for location
+        // Improved fallback for location
         if (!location || location === 'Location Not Found' || location === 'Locations') {
-          // Try to extract location from job description
+          // Try to extract location from job description using a more robust regex
           const locMatch = description.match(/Location:?\s*([^\n]+)/i);
           if (locMatch && locMatch[1]) {
             location = locMatch[1].trim();
           } else {
-            // Try to extract from job details section
-            const detailsMatch = description.match(/(?:Austin|TX|Colorado|Remote|United States|Massachusetts|Longmont)/i);
+            // Try to extract from job details section (look for city/state patterns)
+            const detailsMatch = description.match(/(Austin, TX|Boxborough, MA|Fort Collins, CO|Longmont, CO|Remote|United States|Massachusetts|Colorado)/i);
             if (detailsMatch) {
               location = detailsMatch[0];
             }
