@@ -767,7 +767,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('configureDatabase').addEventListener('click', () => {
-    const choice = prompt('Choose how to get your Database ID:\n\n1. Enter manually\n2. Get from current Notion page\n\nEnter 1 or 2:');
+    const choice = prompt('Choose how to get your Database ID:\n\n1. Enter manually\n2. Get from current Notion page\n3. Get exact ID from database settings\n\nEnter 1, 2, or 3:');
     
     if (choice === '1') {
       const databaseId = prompt('Enter your Notion Database ID:\n\nFrom your URL: https://www.notion.so/Application-Tracker-1aa904c944e681eb80d2fd4dc7bc098a\n\nCopy this part: 1aa904c944e681eb80d2fd4dc7bc098a\n\n(Just paste it as-is, the extension will format it automatically)');
@@ -782,22 +782,50 @@ document.addEventListener('DOMContentLoaded', () => {
       // Try to get database ID from current Notion page
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         const url = tabs[0].url;
+        console.log('Current URL:', url);
+        
         if (url.includes('notion.so')) {
-          const match = url.match(/Application-Tracker-([a-f0-9]{32})/);
+          // Try multiple patterns to extract database ID
+          let databaseId = null;
+          
+          // Pattern 1: Application-Tracker-{32 chars}
+          let match = url.match(/Application-Tracker-([a-f0-9]{32})/);
           if (match) {
-            const databaseId = match[1];
+            databaseId = match[1];
+          }
+          
+          // Pattern 2: Direct 32-character hex string
+          if (!databaseId) {
+            match = url.match(/([a-f0-9]{32})/);
+            if (match) {
+              databaseId = match[1];
+            }
+          }
+          
+          // Pattern 3: UUID format with hyphens
+          if (!databaseId) {
+            match = url.match(/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/);
+            if (match) {
+              databaseId = match[1].replace(/-/g, ''); // Remove hyphens
+            }
+          }
+          
+          if (databaseId) {
+            console.log('Extracted database ID:', databaseId);
             chrome.storage.local.set({ notionDatabaseId: databaseId }, () => {
               NOTION_CONFIG.databaseId = databaseId;
               updateDatabaseStatus(true);
               testDatabaseConnection(databaseId);
             });
           } else {
-            alert('Could not find database ID in current URL. Please make sure you are on your Application Tracker database page.');
+            alert('Could not find database ID in current URL.\n\nURL: ' + url + '\n\nPlease make sure you are on your Application Tracker database page and try again.');
           }
         } else {
           alert('Please navigate to your Application Tracker database page first, then try again.');
         }
       });
+    } else if (choice === '3') {
+      alert('To get the exact database ID:\n\n1. Go to your Application Tracker database\n2. Click the "..." menu (three dots) next to the database title\n3. Click "Copy link"\n4. The link will contain the correct database ID\n\nThen choose option 1 to enter it manually.');
     }
   });
 
