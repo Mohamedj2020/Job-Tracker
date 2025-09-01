@@ -37,7 +37,11 @@ chrome.storage.local.get(['notionToken', 'notionDatabaseId'], (result) => {
     NOTION_CONFIG.databaseId = result.notionDatabaseId;
     updateDatabaseStatus(true);
   } else {
-    updateDatabaseStatus(false);
+    // Set default database ID from the new URL
+    NOTION_CONFIG.databaseId = '261904c944e68019a9e2c2395139bc21';
+    chrome.storage.local.set({ notionDatabaseId: '261904c944e68019a9e2c2395139bc21' }, () => {
+      updateDatabaseStatus(true);
+    });
   }
 });
 
