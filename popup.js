@@ -184,50 +184,38 @@ async function scrapeJobInfo() {
         let location = findText(selectors.location);
         let description = findText(selectors.description);
 
-        // Improved fallback for company
-        if (!company || company === 'Company Not Found') {
-          // Try to extract company from job description using a more robust regex
-          const descCompanyMatch = description.match(/at\s+([A-Za-z0-9 &\-,\.]+)/i);
-          if (descCompanyMatch && descCompanyMatch[1]) {
-            company = descCompanyMatch[1].trim();
-          } else {
-            // Try to extract from page title
-            const pageTitle = document.title;
-            const titleCompanyMatch = pageTitle.match(/at\s+([A-Za-z0-9 &\-,\.]+)/i);
-            if (titleCompanyMatch && titleCompanyMatch[1]) {
-              company = titleCompanyMatch[1].trim();
-            }
-          }
-          // If still not found, extract from URL
-          if (!company || company === 'Company Not Found') {
-            const urlParts = window.location.href.split('/');
-            if (urlParts.length > 2) {
-              company = urlParts[2].replace('www.', '').replace('.com', '').replace('.net', '').replace('.org', '');
-            }
-          }
-          // If still not found, use hostname as last resort
-          if (!company || company === 'Company Not Found') {
-            company = window.location.hostname.replace('www.', '').split('.')[0];
+        // --- Fallbacks for missing info ---
+
+        // Fallback for title: largest heading
+        if (!title) {
+          const h1 = document.querySelector('h1');
+          if (h1 && h1.textContent.trim().length > 3) title = h1.textContent.trim();
+          else {
+            const h2 = document.querySelector('h2');
+            if (h2 && h2.textContent.trim().length > 3) title = h2.textContent.trim();
           }
         }
 
-        // Improved fallback for location
-        if (!location || location === 'Location Not Found' || location === 'Locations') {
-          // Try to extract location from job description using a more robust regex
-          const locMatch = description.match(/Location:?\s*([^\n]+)/i);
-          if (locMatch && locMatch[1]) {
-            location = locMatch[1].trim();
-          } else {
-            // Try to extract from job details section (look for city/state patterns)
-            const detailsMatch = description.match(/(Austin, TX|Boxborough, MA|Fort Collins, CO|Longmont, CO|Remote|United States|Massachusetts|Colorado)/i);
-            if (detailsMatch) {
-              location = detailsMatch[0];
-            }
+        // Fallback for company: look for logo alt text or first strong/bold text
+        if (!company) {
+          const logo = document.querySelector('img[alt*="logo"], img[alt*="Logo"]');
+          if (logo && logo.alt && logo.alt.length > 2) company = logo.alt.trim();
+          else {
+            const strong = document.querySelector('strong');
+            if (strong && strong.textContent.length > 2) company = strong.textContent.trim();
           }
-          // If still not found, use 'Not Specified'
-          if (!location || location === 'Location Not Found') {
-            location = 'Not Specified';
-          }
+        }
+
+        // Fallback for location: look for city/state pattern in all text
+        if (!location) {
+          const allText = document.body.innerText;
+          const locMatch = allText.match(/(Columbus, OH|Austin, TX|Boxborough, MA|Fort Collins, CO|Longmont, CO|Remote|United States|Massachusetts|Colorado)/i);
+          if (locMatch) location = locMatch[0];
+        }
+
+        // Fallback for description: grab all visible text
+        if (!description) {
+          description = document.body.innerText.substring(0, 2000);
         }
         
         // Limit company and location length
