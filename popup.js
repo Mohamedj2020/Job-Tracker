@@ -314,15 +314,20 @@ async function saveToAirtable(jobInfo, bestResume) {
         records: [
           {
             fields: {
-              "Job Title": jobInfo.title || 'Unknown Job Title',
-              "Company": jobInfo.company || 'Unknown',
-              "Location": jobInfo.location || 'Unknown',
-              "Job Link": jobInfo.url || '',
-              "Resume Used": bestResume.name || '',
-              "Resume Link": RESUME_LINKS[bestResume.id] || '', // <-- Add this line
-              "Match Score": bestResume.score.percentage || 0,
-              "Description": jobInfo.description ? jobInfo.description.substring(0, 1000) + '...' : 'No description available',
-              "Status": "Todo"
+              "fldeySIumBgdyfjdL": jobInfo.title || 'Unknown Job Title', // Job Title
+              "fldvbLgXTIbWvEtlM": jobInfo.company || 'Unknown',         // Company
+              "fldzY8VkX9BJ1lp4j": jobInfo.location || 'Unknown',        // Location
+              "fldhpQ4BiEDkw1Fzl": jobInfo.url || '',                    // Job Link
+              // Resume Used as attachment (array of objects)
+              "fldSppWOHPLks69xc": [
+                {
+                  url: RESUME_LINKS[bestResume.id] || '',
+                  filename: `${bestResume.name}.pdf`
+                }
+              ],
+              "fldwGdhbDzWlviVQu": bestResume.score.percentage || 0,     // Match Score
+              "fldiKLsCpZfOrrMHm": jobInfo.description ? jobInfo.description.substring(0, 1000) + '...' : 'No description available', // Description
+              "fldaM0Di903EBcDTp": "Todo"                                // Status
             }
           }
         ]
