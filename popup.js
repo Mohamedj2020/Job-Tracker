@@ -312,9 +312,9 @@ async function saveToAirtable(jobInfo, bestResume) {
     alert('Please configure your Airtable API key first! Click "Configure API Key" to set it up.');
     return;
   }
-  
+
   console.log('Saving to Airtable base:', AIRTABLE_CONFIG.baseId);
-  
+
   try {
     const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_CONFIG.baseId}/${AIRTABLE_CONFIG.tableId}`, {
       method: 'POST',
@@ -326,15 +326,20 @@ async function saveToAirtable(jobInfo, bestResume) {
         records: [
           {
             fields: {
-              'Name': jobInfo.title || 'Unknown Job Title',
-              'Notes': `Company: ${jobInfo.company || 'Unknown'}\nLocation: ${jobInfo.location || 'Unknown'}\nLink: ${jobInfo.url || ''}\nResume Used: ${bestResume.name}\nMatch Score: ${bestResume.score.percentage}%\nDescription: ${jobInfo.description ? jobInfo.description.substring(0, 1000) + '...' : 'No description available'}`,
-              'Status': 'Todo'
+              "Job Title": jobInfo.title || 'Unknown Job Title',
+              "Company": jobInfo.company || 'Unknown',
+              "Location": jobInfo.location || 'Unknown',
+              "Job Link": jobInfo.url || '',
+              "Resume Used": [], // You can attach files here if needed
+              "Match Score": bestResume.score.percentage || 0,
+              "Description": jobInfo.description ? jobInfo.description.substring(0, 1000) + '...' : 'No description available',
+              "Status": "Todo"
             }
           }
         ]
       })
     });
-    
+
     if (response.ok) {
       const result = await response.json();
       console.log('Successfully saved to Airtable:', result);
@@ -342,9 +347,9 @@ async function saveToAirtable(jobInfo, bestResume) {
     } else {
       const errorData = await response.json();
       console.error('Airtable API error:', errorData);
-      
+
       let errorMessage = `Failed to save to Airtable: ${response.status} ${response.statusText}`;
-      
+
       if (response.status === 401) {
         errorMessage = 'Invalid API key. Please check your Airtable API key.';
       } else if (response.status === 403) {
@@ -352,7 +357,7 @@ async function saveToAirtable(jobInfo, bestResume) {
       } else if (response.status === 404) {
         errorMessage = 'Base or table not found. Please check your base ID and table ID.';
       }
-      
+
       throw new Error(errorMessage);
     }
   } catch (error) {
@@ -732,5 +737,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
-  
-  
+
