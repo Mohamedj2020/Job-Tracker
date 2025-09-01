@@ -232,10 +232,9 @@ async function scrapeJobInfo() {
       }
     });
     
-    const jobInfo = results[0].result;
-    
-    // Validate that we got some useful information
-    if (jobInfo.title === 'Job Title Not Found' && jobInfo.company === 'Company Not Found') {
+    const jobInfo = results && results[0] && results[0].result ? results[0].result : null;
+
+    if (!jobInfo) {
       throw new Error('Could not extract job information from this page');
     }
     
